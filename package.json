@@ -1,0 +1,24 @@
+{
+  "name": "soilhive-dashboard",
+  "version": "1.0.0",
+  "main": "javascript.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node javascript.js",
+    "dev": "node javascript.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "soilhive",
+    "soil",
+    "api",
+    "dashboard"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "SoilHive API Dashboard with Location Search",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0"
+  }
+}

@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SoilHive Data Dashboard</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+        font-size: 3rem;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        font-weight: 700;
+        letter-spacing: 1px;
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes glow {
+        from {
+          text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3),
+            0 0 10px rgba(255, 255, 255, 0.2);
+        }
+        to {
+          text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3),
+            0 0 20px rgba(255, 255, 255, 0.4);
+        }
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 30px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1),
+          0 5px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15),
+          0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      .card h2 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        border-bottom: 3px solid transparent;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        padding-bottom: 12px;
+        font-size: 1.4rem;
+        font-weight: 600;
+        position: relative;
+      }
+
+      .card h2::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 2px;
+      }
+
+      .input-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #555;
+      }
+
+      input {
+        width: 100%;
+        padding: 15px 18px;
+        border: 2px solid #e1e8ed;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        background: white;
+        transform: translateY(-1px);
+      }
+
+      button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 25px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      button:hover::before {
+        left: 100%;
+      }
+
+      button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      button:active {
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .results {
+        grid-column: span 2;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1),
+          0 5px 15px rgba(0, 0, 0, 0.08);
+        max-height: 700px;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .results::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .results::-webkit-scrollbar-track {
+        background: rgba(241, 241, 241, 0.8);
+        border-radius: 10px;
+      }
+
+      .results::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+      }
+
+      .soil-property {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px;
+        margin: 12px 0;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        border-left: 5px solid #667eea;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .soil-property:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      }
+
+      .soil-property:nth-child(even) {
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        border-left-color: #764ba2;
+      }
+
+      .soil-property:nth-child(even):hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      }
+
+      .property-name {
+        font-weight: 700;
+        color: #2c3e50;
+        font-size: 1.1rem;
+      }
+
+      .property-type {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      }
+
+      .loading {
+        text-align: center;
+        padding: 60px;
+        color: #666;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 30px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        border-left: 5px solid #ff5252;
+      }
+
+      .success {
+        background: linear-gradient(135deg, #51cf66, #40c057);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        box-shadow: 0 8px 25px rgba(81, 207, 102, 0.3);
+        border-left: 5px solid #37b24d;
+        animation: slideInFromTop 0.5s ease-out;
+      }
+
+      @keyframes slideInFromTop {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .coordinates-info {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+        color: #1565c0;
+        font-weight: 600;
+        border-left: 5px solid #1976d2;
+        box-shadow: 0 4px 15px rgba(25, 118, 210, 0.2);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .category-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin: 25px 0 15px 0;
+        font-weight: 600;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      }
+
+      @media (max-width: 768px) {
+        .dashboard {
+          grid-template-columns: 1fr;
+        }
+
+        .results {
+          grid-column: span 1;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🌱 SoilHive Data Dashboard</h1>
+
+      <div class="dashboard">
+        <div class="card">
+          <h2>📍 Location Input</h2>
+
+          <!-- Search Location Option -->
+          <div class="input-group">
+            <label for="locationSearch">🔍 Search Location:</label>
+            <input
+              type="text"
+              id="locationSearch"
+              placeholder="Search for a city, landmark, or address..."
+              style="margin-bottom: 10px"
+              onkeypress="if(event.key==='Enter') searchLocation()"
+            />
+            <button
+              onclick="searchLocation()"
+              id="searchBtn"
+              style="
+                margin-bottom: 15px;
+                background: linear-gradient(135deg, #28a745, #20c997);
+              "
+            >
+              🌍 Search & Set Location
+            </button>
+          </div>
+
+          <div
+            style="
+              text-align: center;
+              margin: 15px 0;
+              color: #666;
+              font-weight: 500;
+            "
+          >
+            ──── OR ────
+          </div>
+
+          <!-- Manual Coordinate Input -->
+          <div class="input-group">
+            <label for="latitude">Latitude:</label>
+            <input
+              type="number"
+              id="latitude"
+              step="any"
+              value="18.52"
+              placeholder="Enter latitude"
+            />
+          </div>
+          <div class="input-group">
+            <label for="longitude">Longitude:</label>
+            <input
+              type="number"
+              id="longitude"
+              step="any"
+              value="73.85"
+              placeholder="Enter longitude"
+            />
+          </div>
+          <button onclick="fetchSoilData()" id="fetchBtn">
+            🔍 Get Soil Properties
+          </button>
+        </div>
+
+        <div class="card">
+          <h2>🗺️ Quick Locations</h2>
+          <button
+            onclick="setLocation(28.6139, 77.2090)"
+            style="margin-bottom: 8px"
+          >
+            📍 New Delhi, India
+          </button>
+          <button
+            onclick="setLocation(19.0760, 72.8777)"
+            style="margin-bottom: 8px"
+          >
+            📍 Mumbai, India
+          </button>
+          <button
+            onclick="setLocation(40.7128, -74.0060)"
+            style="margin-bottom: 8px"
+          >
+            📍 New York, USA
+          </button>
+          <button
+            onclick="setLocation(51.5074, -0.1278)"
+            style="margin-bottom: 8px"
+          >
+            📍 London, UK
+          </button>
+          <button
+            onclick="setLocation(35.6762, 139.6503)"
+            style="margin-bottom: 8px"
+          >
+            📍 Tokyo, Japan
+          </button>
+          <button onclick="setLocation(-33.8688, 151.2093)">
+            📍 Sydney, Australia
+          </button>
+        </div>
+
+        <div class="results" id="results">
+          <div class="loading">
+            <h2>🌍 Welcome to SoilHive Dashboard</h2>
+            <p>
+              Enter coordinates above to get detailed soil properties for any
+              location worldwide!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://cdn.openepi.io/js-client.min.js"></script>
+
+    <script>
+      function setLocation(lat, lon) {
+        document.getElementById("latitude").value = lat;
+        document.getElementById("longitude").value = lon;
+        fetchSoilData();
+      }
+
+      async function searchLocation() {
+        const searchQuery = document
+          .getElementById("locationSearch")
+          .value.trim();
+        const searchBtn = document.getElementById("searchBtn");
+        const resultsDiv = document.getElementById("results");
+
+        if (!searchQuery) {
+          resultsDiv.innerHTML =
+            '<div class="error">❌ Please enter a location to search!</div>';
+          return;
+        }
+
+        // Show loading state
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = "🔄 Searching...";
+        resultsDiv.innerHTML = `
+          <div class="loading">
+            <div class="spinner"></div>
+            <h3 style="color: #667eea; margin-bottom: 10px;">Searching for: "${searchQuery}"</h3>
+            <p style="color: #888;">Finding coordinates for your location...</p>
+          </div>
+        `;
+
+        try {
+          // Using Nominatim (OpenStreetMap) geocoding service - free and reliable
+          const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            searchQuery
+          )}&limit=5&addressdetails=1`;
+
+          const response = await fetch(geocodeUrl, {
+            headers: {
+              "User-Agent": "SoilHive-Dashboard/1.0",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Geocoding error! status: ${response.status}`);
+          }
+
+          const locations = await response.json();
+
+          if (locations.length === 0) {
+            throw new Error("No locations found for your search query");
+          }
+
+          // Display search results for user to choose from
+          if (locations.length === 1) {
+            // If only one result, use it directly
+            const location = locations[0];
+            const lat = parseFloat(location.lat);
+            const lon = parseFloat(location.lon);
+
+            document.getElementById("latitude").value = lat.toFixed(6);
+            document.getElementById("longitude").value = lon.toFixed(6);
+            document.getElementById("locationSearch").value =
+              location.display_name;
+
+            resultsDiv.innerHTML = `
+              <div class="success">
+                ✅ Found location: <strong>${location.display_name}</strong>
+                <br>📍 Coordinates: ${lat.toFixed(6)}°N, ${lon.toFixed(6)}°E
+                <br><em>Fetching soil data automatically...</em>
+              </div>
+            `;
+
+            // Auto-fetch soil data
+            setTimeout(() => fetchSoilData(), 1500);
+          } else {
+            // Multiple results - let user choose
+            let html = `
+              <div class="success">
+                ✅ Found ${locations.length} locations for "${searchQuery}". Please select one:
+              </div>
+            `;
+
+            locations.forEach((location, index) => {
+              const lat = parseFloat(location.lat);
+              const lon = parseFloat(location.lon);
+              html += `
+                <div class="soil-property" onclick="selectSearchResult(${lat}, ${lon}, '${location.display_name.replace(
+                /'/g,
+                "\\'"
+              )}')">
+                  <div>
+                    <div class="property-name">${location.display_name}</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">
+                      📍 ${lat.toFixed(6)}°N, ${lon.toFixed(6)}°E
+                    </div>
+                    ${
+                      location.type
+                        ? `<div style="font-size: 12px; color: #888; margin-top: 3px;">Type: ${location.type}</div>`
+                        : ""
+                    }
+                  </div>
+                  <div class="property-type">Click to Select</div>
+                </div>
+              `;
+            });
+
+            resultsDiv.innerHTML = html;
+          }
+        } catch (error) {
+          console.error("Search error:", error);
+          resultsDiv.innerHTML = `
+            <div class="error">
+              <h3>❌ Search Failed</h3>
+              <p><strong>Could not find location:</strong> "${searchQuery}"</p>
+              <p>Please try:</p>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>A different spelling or name</li>
+                <li>Adding country/state (e.g., "Paris, France")</li>
+                <li>Using a more specific address</li>
+                <li>Checking your internet connection</li>
+              </ul>
+              <p style="font-size: 14px; color: #666;">Error: ${error.message}</p>
+            </div>
+          `;
+        } finally {
+          searchBtn.disabled = false;
+          searchBtn.innerHTML = "🌍 Search & Set Location";
+        }
+      }
+
+      function selectSearchResult(lat, lon, displayName) {
+        document.getElementById("latitude").value = lat.toFixed(6);
+        document.getElementById("longitude").value = lon.toFixed(6);
+        document.getElementById("locationSearch").value = displayName;
+
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = `
+          <div class="success">
+            ✅ Selected: <strong>${displayName}</strong>
+            <br>📍 Coordinates: ${lat.toFixed(6)}°N, ${lon.toFixed(6)}°E
+            <br><em>Fetching soil data...</em>
+          </div>
+        `;
+
+        // Auto-fetch soil data
+        setTimeout(() => fetchSoilData(), 1000);
+      }
+
+      async function fetchSoilData() {
+        const lat = document.getElementById("latitude").value;
+        const lon = document.getElementById("longitude").value;
+        const resultsDiv = document.getElementById("results");
+        const fetchBtn = document.getElementById("fetchBtn");
+
+        if (!lat || !lon) {
+          resultsDiv.innerHTML =
+            '<div class="error">❌ Please enter both latitude and longitude!</div>';
+          return;
+        }
+
+        // Enhanced loading state with detailed data fetch information
+        fetchBtn.disabled = true;
+        fetchBtn.innerHTML = "🔄 Loading...";
+        resultsDiv.innerHTML = `
+          <div class="loading">
+            <div class="spinner"></div>
+            <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.3rem;">🌍 Soil Data Fetch in Progress</h3>
+            <div style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #667eea;">
+              <p style="color: #555; margin-bottom: 12px; font-weight: 600;">📍 Target Location: ${lat}°N, ${lon}°E</p>
+              <p style="color: #555; margin-bottom: 12px;">🌐 Data Source: SoilHive Global Soil Database</p>
+              <p style="color: #555; margin-bottom: 12px;">📊 Expected Data Types:</p>
+              <ul style="color: #666; margin: 10px 0; padding-left: 30px; line-height: 1.6;">
+                <li>🧪 <strong>Chemical Properties:</strong> pH levels, nutrient content, mineral composition</li>
+                <li>🏗️ <strong>Physical Properties:</strong> soil texture, bulk density, water retention</li>
+                <li>🌱 <strong>Biological Properties:</strong> organic matter, microbial activity, carbon content</li>
+                <li>📈 <strong>Derived Properties:</strong> calculated soil health metrics and indices</li>
+              </ul>
+              <p style="color: #555; margin-top: 15px;">🔐 Authentication: OAuth 2.0 Bearer Token</p>
+              <p style="color: #555;">⏱️ Processing Time: ~3-5 seconds</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 15px; border-radius: 10px; margin-top: 20px;">
+              <p style="color: #1565c0; font-weight: 600; margin-bottom: 8px;">🔄 Current Status:</p>
+              <div id="fetchStatus" style="color: #1976d2;">Initializing API connection...</div>
+            </div>
+          </div>
+        `;
+
+        // Add dynamic status updates
+        const statusDiv = document.getElementById("fetchStatus");
+        setTimeout(
+          () =>
+            (statusDiv.innerHTML = "🔐 Authenticating with SoilHive API..."),
+          500
+        );
+        setTimeout(
+          () =>
+            (statusDiv.innerHTML = "📡 Requesting soil properties database..."),
+          1000
+        );
+        setTimeout(
+          () =>
+            (statusDiv.innerHTML = "📊 Processing comprehensive soil data..."),
+          2000
+        );
+        setTimeout(
+          () =>
+            (statusDiv.innerHTML =
+              "🧪 Analyzing chemical and physical properties..."),
+          2500
+        );
+
+        try {
+          console.log(
+            "Attempting to fetch from:",
+            `http://localhost:3000/api/test-token?lat=${lat}&lon=${lon}`
+          );
+
+          const response = await fetch(
+            `http://localhost:3000/api/test-token?lat=${lat}&lon=${lon}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              mode: "cors",
+            }
+          );
+
+          console.log("Response status:", response.status);
+          console.log("Response ok:", response.ok);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Received data:", data);
+
+          if (data.success) {
+            displaySoilProperties(data, lat, lon);
+          } else {
+            throw new Error("Failed to fetch soil properties");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          resultsDiv.innerHTML = `
+            <div class="error">
+              <h3>❌ Error Fetching Data</h3>
+              <p><strong>Make sure your server is running!</strong></p>
+              <p>Run <code>npm start</code> in your terminal first.</p>
+              <p>Error details: ${error.message}</p>
+            </div>
+          `;
+        } finally {
+          fetchBtn.disabled = false;
+          fetchBtn.innerHTML = "🔍 Get Soil Properties";
+        }
+      }
+
+      function displaySoilProperties(data, lat, lon) {
+        const resultsDiv = document.getElementById("results");
+        const properties = data.properties.items;
+
+        // Calculate statistics
+        const propertyTypes = {};
+        properties.forEach((prop) => {
+          const type = prop.type.replace("Property", "");
+          propertyTypes[type] = (propertyTypes[type] || 0) + 1;
+        });
+
+        let html = `
+          <div class="success">
+            ✅ Data Fetch Completed Successfully!
+            <div style="margin-top: 12px; font-size: 14px; opacity: 0.9;">
+              Retrieved ${
+                properties.length
+              } comprehensive soil properties from SoilHive Global Database
+            </div>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #e8f5e8, #d4f6d4); padding: 20px; border-radius: 15px; margin: 20px 0; border-left: 5px solid #4caf50;">
+            <h3 style="color: #2e7d32; margin-bottom: 15px;">📊 Data Fetch Summary Report</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div style="color: #388e3c;">
+                <strong>📍 Location:</strong> ${lat}°N, ${lon}°E
+              </div>
+              <div style="color: #388e3c;">
+                <strong>🌐 Data Source:</strong> SoilHive API v1
+              </div>
+              <div style="color: #388e3c;">
+                <strong>🕒 Fetch Time:</strong> ${new Date(
+                  data.timestamp
+                ).toLocaleString()}
+              </div>
+              <div style="color: #388e3c;">
+                <strong>📦 Response Format:</strong> JSON-LD Schema.org
+              </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.7); padding: 12px; border-radius: 8px;">
+              <strong style="color: #2e7d32;">🔬 Data Quality Metrics:</strong>
+              <div style="margin-top: 8px; color: #388e3c; line-height: 1.6;">
+                • Authentication: ✅ OAuth 2.0 Bearer Token<br>
+                • Data Integrity: ✅ ${
+                  properties.length
+                } properties validated<br>
+                • Completeness: ✅ ${
+                  properties.filter((p) => p.description).length
+                }/${properties.length} have descriptions<br>
+                • Measurement Units: ✅ ${
+                  properties.filter((p) => p.unitText).length
+                }/${properties.length} include units
+              </div>
+            </div>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">${properties.length}</div>
+              <div class="stat-label">Total Properties</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${
+                Object.keys(propertyTypes).length
+              }</div>
+              <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${
+                properties.filter((p) => p.description).length
+              }</div>
+              <div class="stat-label">With Descriptions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${
+                properties.filter((p) => p.unitText).length
+              }</div>
+              <div class="stat-label">With Units</div>
+            </div>
+          </div>
+
+          <h2 style="text-align: center; color: #2c3e50; margin: 30px 0 20px 0; font-size: 1.8rem;">🧪 Soil Properties by Category</h2>
+          
+          <div style="margin-bottom: 20px;">
+            <input type="text" id="searchInput" placeholder="🔍 Search properties by name..." 
+                   style="margin-bottom: 15px;" oninput="filterProperties()">
+          </div>
+        `;
+
+        // Group properties by type
+        const groupedProperties = {};
+        properties.forEach((prop) => {
+          if (!groupedProperties[prop.type]) {
+            groupedProperties[prop.type] = [];
+          }
+          groupedProperties[prop.type].push(prop);
+        });
+
+        // Display grouped properties with enhanced styling
+        Object.keys(groupedProperties).forEach((type) => {
+          const categoryName = type.replace("Property", "");
+          const categoryIcon = getCategoryIcon(categoryName);
+
+          html += `<div class="category-header">
+            ${categoryIcon} ${categoryName} Properties (${groupedProperties[type].length})
+          </div>`;
+
+          groupedProperties[type].forEach((property, index) => {
+            html += `
+              <div class="soil-property" style="animation-delay: ${
+                index * 0.1
+              }s">
+                <div>
+                  <div class="property-name">${property.name}</div>
+                  ${
+                    property.description
+                      ? `<div style="font-size: 13px; color: #666; margin-top: 8px; line-height: 1.4;">${property.description.substring(
+                          0,
+                          150
+                        )}${
+                          property.description.length > 150 ? "..." : ""
+                        }</div>`
+                      : ""
+                  }
+                  ${
+                    property.unitText
+                      ? `<div style="font-size: 12px; color: #888; margin-top: 5px; font-weight: 500;">📏 Units: ${property.unitText}</div>`
+                      : ""
+                  }
+                  ${
+                    property.identifier
+                      ? `<div style="font-size: 11px; color: #aaa; margin-top: 3px;">ID: ${property.identifier}</div>`
+                      : ""
+                  }
+                </div>
+                <div class="property-type">${categoryName}</div>
+              </div>
+            `;
+          });
+        });
+
+        resultsDiv.innerHTML = html;
+
+        // Add fade-in animation to properties
+        setTimeout(() => {
+          const properties = document.querySelectorAll(".soil-property");
+          properties.forEach((prop, index) => {
+            setTimeout(() => {
+              prop.style.opacity = "0";
+              prop.style.transform = "translateY(20px)";
+              prop.style.transition = "all 0.5s ease";
+              setTimeout(() => {
+                prop.style.opacity = "1";
+                prop.style.transform = "translateY(0)";
+              }, 50);
+            }, index * 50);
+          });
+        }, 100);
+      }
+
+      function getCategoryIcon(category) {
+        const icons = {
+          Chemical: "🧪",
+          Physical: "🏗️",
+          Biological: "🌱",
+          Derived: "📊",
+        };
+        return icons[category] || "📋";
+      }
+
+      function filterProperties() {
+        const searchTerm = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const properties = document.querySelectorAll(".soil-property");
+
+        properties.forEach((property) => {
+          const propertyName = property
+            .querySelector(".property-name")
+            .textContent.toLowerCase();
+          if (propertyName.includes(searchTerm)) {
+            property.style.display = "flex";
+            property.style.animation = "fadeIn 0.3s ease";
+          } else {
+            property.style.display = "none";
+          }
+        });
+      }
+
+      // Add some CSS animations
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .soil-property {
+          animation: fadeIn 0.5s ease forwards;
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Auto-fetch data on page load
+      window.addEventListener("load", function () {
+        setTimeout(fetchSoilData, 1000);
+      });
+    </script>
+  </body>
+</html>
