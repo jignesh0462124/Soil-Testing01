@@ -12,6 +12,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -19,28 +22,12 @@
 
     <script src="firebase-config.js"></script>
 
+    <!-- Leaflet Map Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
     <style>
-        :root {
-            --primary: #7C4DFF;
-            --secondary: #00E5FF;
-            --text-dark: #1A1A1A;
-            --text-gray: #666;
-            --glass: rgba(255, 255, 255, 0.9);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: #000;
-            color: white;
-            overflow-x: hidden;
-        }
-
+        /* Landing Specific Overrides */
         .hero {
             height: 100vh;
             width: 100vw;
@@ -49,113 +36,72 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000 100%);
             overflow: hidden;
         }
 
-        /* Animated Background Mesh */
-        .mesh {
-            position: absolute;
-            inset: 0;
-            background-image:
-                radial-gradient(circle at 15% 50%, rgba(124, 77, 255, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(0, 229, 255, 0.15), transparent 25%);
-            z-index: 0;
-            animation: pulse 10s ease-in-out infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            100% {
-                transform: scale(1.1);
-                opacity: 1;
-            }
-        }
-
-        .content {
+        .hero-content {
             position: relative;
             z-index: 10;
-            max-width: 800px;
-            padding: 20px;
-        }
-
-        h1 {
-            font-size: 80px;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 24px;
-            background: linear-gradient(135deg, #fff 0%, #a5a5a5 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -2px;
-        }
-
-        p {
-            font-size: 20px;
-            color: #ccc;
-            margin-bottom: 40px;
-            font-weight: 300;
-            line-height: 1.6;
-        }
-
-        .btn {
-            padding: 18px 48px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 100px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            display: inline-block;
-            border: none;
-        }
-
-        .btn-primary {
-            background: white;
-            color: black;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.4);
+            max-width: 900px;
+            padding: 24px;
         }
 
         .stats-row {
             display: flex;
-            gap: 40px;
+            gap: 60px;
             justify-content: center;
-            margin-top: 60px;
+            margin-top: 80px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             padding-top: 40px;
         }
 
         .stat h3 {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
+            font-size: 40px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
         }
 
         .stat div {
             font-size: 14px;
-            color: #888;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
+            letter-spacing: 2px;
+            font-weight: 500;
+        }
+
+        /* Map Container States */
+        .map-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            background: var(--bg-dark);
+        }
+
+        .map-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         @media (max-width: 768px) {
-            h1 {
-                font-size: 48px;
-            }
-
             .stats-row {
                 flex-direction: column;
-                gap: 24px;
+                gap: 32px;
             }
         }
     </style>
@@ -163,24 +109,45 @@
 
 <body>
 
+    <!-- Background Animation -->
+    <div class="mesh-bg">
+        <div class="mesh-blob blob-1"></div>
+        <div class="mesh-blob blob-2"></div>
+    </div>
+
+    <!-- Navigation -->
     <nav
-        style="position: absolute; top: 0; left: 0; width: 100%; padding: 24px; z-index: 20; display: flex; justify-content: space-between; align-items: center;">
-        <div style="font-weight: 700; font-size: 24px; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 28px;">🌱</span> SoilHive
+        style="position: absolute; top: 0; left: 0; width: 100%; padding: 32px; z-index: 20; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: 700; font-size: 24px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 32px;">🌱</span> SoilHive
         </div>
-        <a href="login.html"
-            style="color: white; text-decoration: none; font-weight: 500; font-size: 16px; opacity: 0.8; transition: opacity 0.2s;">Login</a>
+        <a href="login.html" class="btn btn-secondary">Login</a>
     </nav>
 
+    <!-- Hero Section -->
     <div class="hero">
-        <div class="mesh"></div>
+        <div class="hero-content">
+            <h1 style="margin-bottom: 24px;">
+                The Future of<br>
+                <span class="text-gradient"
+                    style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Soil
+                    Intelligence</span>
+            </h1>
 
-        <div class="content">
-            <h1>The Future of<br><span style="color: var(--primary);">Soil Intelligence</span></h1>
-            <p>Access comprehensive soil data, visualize ingredients, and track your land's health metrics with our
-                advanced geospatial analytics platform.</p>
+            <p style="margin-bottom: 48px; font-size: 1.25rem;">
+                Access comprehensive soil data, visualize key ingredients, and track your land's health metrics with our
+                advanced geospatial analytics platform.
+            </p>
 
-            <button onclick="handleGetStarted()" class="btn btn-primary">Start Analyzing Now</button>
+            <button onclick="handleGetStarted()" class="btn btn-primary"
+                style="padding: 18px 48px; font-size: 1.125rem;">
+                Start Analyzing Now
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
 
             <div class="stats-row">
                 <div class="stat">
@@ -199,17 +166,24 @@
         </div>
     </div>
 
+    <!-- Map Container -->
+    <div class="map-container" id="map-container">
+        <!-- We will embed index.html content here dynamically or redirect -->
+    </div>
+
     <script>
         function handleGetStarted() {
             const user = auth.currentUser;
             if (user) {
+                // If logged in, redirect to main dashboard
                 window.location.href = 'index.html';
             } else {
+                // If not, go to login
                 window.location.href = 'login.html';
             }
         }
 
-        // Listener to redirect if already logged in (optional UX choice)
+        // Listener to update UI state if loaded
         auth.onAuthStateChanged(user => {
             if (user) {
                 console.log("User is logged in:", user.email);

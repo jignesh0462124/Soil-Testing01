@@ -1,0 +1,336 @@
+/* =========================================
+   1. RESET & BASE STYLES (SOLID DARK THEME)
+   ========================================= */
+:root {
+    /* Solid Dark Palette */
+    --bg-dark: #09090b;
+    /* Deepest black/grey */
+    --bg-card: #18181b;
+    /* Card background */
+    --bg-hover: #27272a;
+    /* Hover state */
+
+    /* Accents */
+    --primary: #7c4dff;
+    /* Purple */
+    --secondary: #64b5f6;
+    /* Light Blue */
+    --accent: #00e676;
+    /* Green */
+    --error: #ef4444;
+    /* Red */
+
+    /* Text */
+    --text-main: #ffffff;
+    --text-muted: #a1a1aa;
+
+    /* Borders & Shadows */
+    --border-color: #27272a;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-hover);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+/* =========================================
+   2. UI UTILITIES (SOLID)
+   ========================================= */
+
+/* Solid Card (Replaces Glass) */
+.glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--card-shadow);
+    backdrop-filter: none;
+    /* Removed transparency */
+}
+
+/* Background Mesh (Subtle & Darker) */
+.mesh-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    background: var(--bg-dark);
+    /* Solid base */
+    overflow: hidden;
+}
+
+.mesh-blob {
+    position: absolute;
+    filter: blur(80px);
+    /* Reduced blur spread */
+    opacity: 0.15;
+    /* More subtle */
+    border-radius: 50%;
+    animation: float 20s infinite ease-in-out;
+}
+
+.blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: var(--primary);
+}
+
+.blob-2 {
+    bottom: -10%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: var(--secondary);
+    animation-delay: -5s;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    50% {
+        transform: translate(30px, 30px);
+    }
+}
+
+/* Components */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #651fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+}
+
+.btn-secondary {
+    background: var(--bg-hover);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: #3f3f46;
+    border-color: #52525b;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+
+.btn-outline:hover {
+    color: var(--text-main);
+    border-color: var(--text-muted);
+}
+
+/* Inputs (Solid) */
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-dark);
+    /* Darker input bg */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.2);
+    background: #0f0f11;
+}
+
+.input-field::placeholder {
+    color: #52525b;
+}
+
+/* Spinner */
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--primary);
+    animation: spin 1s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error Message */
+.error-msg {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.1);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    display: none;
+}
+
+/* =========================================
+   3. LANDING PAGE
+   ========================================= */
+.hero-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 120px 24px 60px;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 60px;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+/* =========================================
+   4. MAP ELEMENTS
+   ========================================= */
+/* Override Leaflet controls for dark theme */
+.leaflet-bar a {
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+.leaflet-bar a:hover {
+    background-color: var(--bg-hover) !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    box-shadow: var(--card-shadow) !important;
+    border: 1px solid var(--border-color);
+}
+
+.leaflet-popup-tip {
+    border-left: none;
+    border-bottom: none;
+}
+
+/* =========================================
+   5. RESPONSIVENESS
+   ========================================= */
+@media (max-width: 768px) {
+    .glass-card {
+        padding: 24px !important;
+    }
+}

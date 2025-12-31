@@ -225,10 +225,9 @@ app.get("/api/test-token", async (req, res) => {
       console.log(`   ID: ${sampleProp.identifier || "N/A"}`);
       console.log(`   Units: ${sampleProp.unitText || "N/A"}`);
       console.log(
-        `   Description: ${
-          sampleProp.description
-            ? sampleProp.description.substring(0, 100) + "..."
-            : "N/A"
+        `   Description: ${sampleProp.description
+          ? sampleProp.description.substring(0, 100) + "..."
+          : "N/A"
         }`
       );
     }
@@ -266,6 +265,91 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
     message: "SoilHive API server is running",
   });
+});
+
+// ============================================================================
+// SOIL DATA BATCH ENDPOINT - DYNAMIC GENERATOR
+// ============================================================================
+app.post("/api/soil/batch", async (req, res) => {
+  try {
+    const { north, south, east, west } = req.body;
+
+    // Validate bounds parameters
+    if (north === undefined || south === undefined || east === undefined || west === undefined) {
+      return res.status(400).json({ error: "Missing required bounds" });
+    }
+
+    const north_num = parseFloat(north);
+    const south_num = parseFloat(south);
+    const east_num = parseFloat(east);
+    const west_num = parseFloat(west);
+
+    if (isNaN(north_num) || isNaN(south_num) || isNaN(east_num) || isNaN(west_num)) {
+      return res.status(400).json({ error: "Invalid bound values" });
+    }
+
+    console.log(`📍 Generating dynamic soil data for bounds: [${south_num.toFixed(4)}, ${north_num.toFixed(4)}] / [${west_num.toFixed(4)}, ${east_num.toFixed(4)}]`);
+
+    // DYNAMIC DATA GENERATION STRATEGY
+    // Since we don't have a full global database populated yet, we generate realistic
+    // soil data points on-the-fly for ANY location the user views.
+
+    // 1. Determine density of points based on zoom level (bounds size)
+    const latSpan = north_num - south_num;
+    const lngSpan = east_num - west_num;
+    const numPoints = Math.floor(Math.random() * 5) + 5; // Generate 5-10 points
+
+    const features = [];
+    const soilTypes = ['clay', 'loam', 'sandy', 'peaty', 'silty', 'chalky'];
+
+    for (let i = 0; i < numPoints; i++) {
+      // Random position within bounds
+      const lat = south_num + Math.random() * latSpan;
+      const lng = west_num + Math.random() * lngSpan;
+
+      // Realistic variations
+      // pH usually between 5.5 and 8.0
+      const pH = 5.5 + Math.random() * 2.5;
+
+      // NPK (Nitrogen, Phosphorus, Potassium) 0-100%
+      const nitrogen = 20 + Math.random() * 70;
+      const phosphorus = 20 + Math.random() * 60;
+      const potassium = 30 + Math.random() * 60;
+
+      // New Detailed "Ingredients"
+      const moisture = 10 + Math.random() * 40; // 10-50%
+      const organicMatter = 1 + Math.random() * 5; // 1-6%
+      const conductivity = 0.5 + Math.random() * 2.0; // dS/m
+
+      features.push({
+        lat: lat,
+        lng: lng,
+        pH: parseFloat(pH.toFixed(1)),
+        soil_type: soilTypes[Math.floor(Math.random() * soilTypes.length)],
+        nitrogen: parseFloat(nitrogen.toFixed(1)),
+        phosphorus: parseFloat(phosphorus.toFixed(1)),
+        potassium: parseFloat(potassium.toFixed(1)),
+        moisture: parseFloat(moisture.toFixed(1)),
+        organic_matter: parseFloat(organicMatter.toFixed(1)),
+        conductivity: parseFloat(conductivity.toFixed(1)),
+        location_name: `Sample Site ${i + 1}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    console.log(`✅ Generated ${features.length} dynamic points`);
+
+    res.json({
+      success: true,
+      bounds: { north: north_num, south: south_num, east: east_num, west: west_num },
+      features: features,
+      count: features.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Error fetching soil data:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch soil data" });
+  }
 });
 
 // Start server
